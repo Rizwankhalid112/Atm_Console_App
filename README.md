@@ -36,21 +36,6 @@ To test the administrative features and system management logic, use the followi
 
 ---
 
-## 📚 Core Concepts Implemented
-
-This project fulfills the requirements for demonstrating the following Python basics:
-
-* **Inheritance**: `User` and `Admin` classes inherit from a base `Account` class.
-* **Encapsulation**: Using Class methods to manage internal state (balance, limits).
-* **Data Structures**: 
-    * **Lists**: Storing transaction histories.
-    * **Dictionaries**: Managing user/admin records for $O(1)$ lookup.
-* **Comprehensions**: Used **List Comprehension** for selective date filtering in transaction history.
-* **File CRUD**: Reading and writing system data to **JSON** for persistent storage.
-* **Error Handling**: Used `try/except` and conditional checks to prevent crashes from invalid inputs or insufficient funds.
-* **Utility Methods**: Implemented `@staticmethod` for authentication logic.
-
----
 
 ## 📁 Project Structure
 - `main.py`: Application entry point and UI loops.
