@@ -1,0 +1,43 @@
+{
+    "101": {
+        "name": "Rizwan",
+        "password": "12345",
+        "balance": 60000.0,
+        "transactions": [
+            {
+                "date": "2026-02-27",
+                "type": "Deposit",
+                "amount": 50000.0,
+                "note": ""
+            },
+            {
+                "date": "2026-02-27",
+                "type": "Withdrawal",
+                "amount": 10000.0,
+                "note": ""
+            },
+            {
+                "date": "2026-02-27",
+                "type": "Deposit",
+                "amount": 20000.0,
+                "note": ""
+            }
+        ],
+        "withdrawal_limit": 10000.0,
+        "transfer_limit": 10000.0
+    },
+    "111": {
+        "id": "111",
+        "name": "Alirehman",
+        "password": "1234",
+        "balance": 11000.0,
+        "transactions": [
+            {
+                "date": "2026-02-27",
+                "type": "Transfer Received",
+                "amount": 10000.0,
+                "note": "From Rizwan"
+            }
+        ]
+    }
+}
