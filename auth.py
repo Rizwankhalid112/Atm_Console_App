@@ -1,5 +1,6 @@
 import hashlib
 
+
 class Auth:
     @staticmethod
     def hash_password(password):
