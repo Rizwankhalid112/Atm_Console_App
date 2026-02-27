@@ -1,0 +1,16 @@
+# Python bytecode (Junk)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# IDE Settings (PyCharm)
+.idea/
+
+# Local Databases (Optional: keep if you want the senior to see your structure)
+# data/*.json
