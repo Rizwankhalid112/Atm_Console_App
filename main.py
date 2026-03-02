@@ -20,17 +20,34 @@ class ATMSystem:
     def run(self):
         while True:
             print("\n" + "=" * 30 + "\n  ATM CONSOLE APPLICATION  \n" + "=" * 30)
-            print("1. Admin Login\n2. User Login\n3. Exit")
+            print("1. Admin Login\n2. User Login\n3. Register New Admin\n4. Exit")
             choice = input("Select: ").strip()
             if choice == "1": self.handle_admin_login()
             elif choice == "2": self.handle_user_login()
-            elif choice == "3": sys.exit()
+            elif choice == "3": self.handle_admin_registration()
+            elif choice == "4": sys.exit()
+
+    def handle_admin_registration(self):
+        """Logic for public Admin registration with Integer ID enforcement."""
+        admins = self.db.load_data(self.db.admins_file)
+        try:
+            val = input("Choose Admin ID (Numeric, or 0 to Cancel): ").strip()
+            if val == "0": return
+            a_id = int(val) 
+            
+            if str(a_id) in admins or a_id == "A01":
+                print("Error: ID already taken.")
+                return
+            
+            name = input("Enter Name: ")
+            pwd = input("Enter Password: ")
+            admins[a_id] = {"name": name, "password": Auth.hash_password(pwd)}
+            self.db.save_data(admins, self.db.admins_file)
+            print(f"Admin {name} registered successfully.")
+        except ValueError:
+            print("Invalid Input: ID must be a numeric integer.")
 
     def handle_admin_login(self):
-        """
-        Handles Admin authentication.
-        Checks against Master credentials (from .env) first, then JSON database.
-        """
         user = input("Admin Username (or 0 to Back): ").strip()
         if user == "0": return
         pwd = input("Admin Password: ")
@@ -40,17 +57,14 @@ class ATMSystem:
             self.admin_panel.show_menu(admin_obj)
             return
 
-     
         admins_data = self.db.load_data(self.db.admins_file)
         hashed_input = Auth.hash_password(pwd)
-        
         for a_id, info in admins_data.items():
             if info.get('name') == user and info.get('password') == hashed_input:
                 admin_obj = Admin(a_id, info['name'], info['password'])
                 self.admin_panel.show_menu(admin_obj)
                 return
-        
-        print("Access Denied: Incorrect Admin credentials.")
+        print("Access Denied.")
 
     def handle_user_login(self):
         u_id = input("User ID (or 0 to Back): ").strip()
@@ -58,7 +72,6 @@ class ATMSystem:
         pin = input("Password: ")
         users_data = self.db.load_data(self.db.users_file)
 
-        
         if u_id in users_data and users_data[u_id]['password'] == Auth.hash_password(pin):
             data = users_data[u_id]
             user_obj = User(u_id, data['name'], data['password'], data['balance'],
@@ -72,8 +85,7 @@ class ATMSystem:
         while True:
             print(f"\n--- Welcome, {user.name} ---\n1. Profile\n2. Withdraw\n3. Deposit\n4. Transfer\n5. History\n6. Logout")
             choice = input("Choice: ").strip()
-            if choice == "1": 
-                print(f"ID: {user.account_id} | Bal: {user.balance} | Transfer Limit: {user.transfer_limit}")
+            if choice == "1": print(f"ID: {user.account_id} | Bal: {user.balance}")
             elif choice == "2":
                 try:
                     if user.withdraw(float(input("Amount: "))): self.update_user_file(user)
@@ -90,32 +102,41 @@ class ATMSystem:
             elif choice == "6": break
 
     def handle_transfer(self, user):
-        """Logic for funds transfer between users with limit and ID validation."""
+        """Synchronized transfer logic with history labeling."""
         try:
             target_id = input("Recipient ID (or 0 to Cancel): ").strip()
             if target_id == "0": return
             amt = float(input("Amount to Transfer: "))
             
-            if amt > user.transfer_limit:
-                print(f"Error: Your transfer limit is {user.transfer_limit}."); return
-            
             users_data = self.db.load_data(self.db.users_file)
             
             if target_id in users_data and user.withdraw(amt):
-              
+                user.transactions[-1]['type'] = "Transfer Sent"
+                user.transactions[-1]['note'] = f"To {users_data[target_id]['name']}"
+
+                users_data[user.account_id] = {
+                    "name": user.name, 
+                    "password": user.password, 
+                    "balance": user.balance,
+                    "transactions": user.transactions,
+                    "withdrawal_limit": user.withdrawal_limit, 
+                    "transfer_limit": user.transfer_limit
+                }
+
                 users_data[target_id]['balance'] += amt
                 users_data[target_id]['transactions'].append({
                     "date": datetime.datetime.now().strftime("%Y-%m-%d"),
-                    "type": "Transfer Received", "amount": amt, "note": f"From {user.name}"
+                    "type": "Transfer Received", 
+                    "amount": amt, 
+                    "note": f"From {user.name}"
                 })
-              
-                self.update_user_file(user)
+                
                 self.db.save_data(users_data, self.db.users_file)
-                print(f"Transfer Successful! {amt} sent to {users_data[target_id]['name']}.")
+                print(f"Transfer Successful to {users_data[target_id]['name']}.")
             else: 
                 print("Error: Target ID not found or insufficient balance.")
         except ValueError: 
-            print("Error: Please enter a valid numeric value for the amount.")
+            print("Numeric values only.")
 
     def update_user_file(self, user):
         """Syncs the current user object state back to the JSON database."""
@@ -128,5 +149,4 @@ class ATMSystem:
         self.db.save_data(all_users, self.db.users_file)
 
 if __name__ == "__main__":
-    
     ATMSystem().run()
