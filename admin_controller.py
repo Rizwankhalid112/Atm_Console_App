@@ -1,161 +1,151 @@
 import datetime
-
+from auth import Auth
 
 class AdminDashboard:
     def __init__(self, data_manager):
         self.db = data_manager
 
     def show_menu(self, current_admin):
-        """Interactable menu for admin interaction (Source 34)."""
         while True:
             print(f"\n--- Admin Panel (Logged in as: {current_admin.name}) ---")
-            print("1. Manage Users ")
-            print("2. Manage Admins ")
-            print("3. View All/User Transactions")
-            print("4. Delete Transactions")
-            print("5. Change Passwords (Admin/User)")
-            print("6. Logout")
-
-            choice = input("Select action: ").strip()
-
-            if choice == "1":
-                self.manage_users_menu()
-            elif choice == "2":
-                self.manage_admins_menu()
-            elif choice == "3":
-                self.view_transactions_menu()
-            elif choice == "4":
-                self.delete_transactions_logic()
-            elif choice == "5":
-                self.change_password_logic(current_admin)
-            elif choice == "6":
-                break
-            else:
-                print("Invalid choice. Please try again (Source 32).")
+            print("1. Manage Users\n2. Manage Admins\n3. View Transactions\n4. Delete History\n5. Change Passwords\n6. Logout")
+            choice = input("Select (or 0 to Go Back): ").strip()
+            if choice == "1": self.manage_users_menu()
+            elif choice == "2": self.manage_admins_menu()
+            elif choice == "3": self.view_transactions_menu()
+            elif choice == "4": self.delete_transactions_logic()
+            elif choice == "5": self.change_password_logic(current_admin)
+            elif choice in ["6", "0"]: break
 
     def manage_users_menu(self):
-        """Fulfills Source 16 & 30: User CRUD and Limits."""
         users = self.db.load_data(self.db.users_file)
-        print("\n1. Create User\n2. Update User\n3. Delete User\n4. View All Users\n5. Search User\n6. Set Limits")
-        sub_choice = input("Selection: ")
+        print("\n1. Create\n2. Update\n3. Delete\n4. View All\n5. Search\n6. Set Limits\n0. Back")
+        sub = input("Selection: ").strip()
+        if sub == "0": return
 
-        if sub_choice == "1":
-            u_id = input("New ID: ")
+        if sub == "1":
+            u_id = input("New ID (or 0 to Cancel): ").strip()
+            if u_id == "0": return
+            if u_id in users:
+                print(f"Error: User ID '{u_id}' already exists.")
+                return
+            name = input("Name: ")
+            raw_pass = input("Password: ")
             users[u_id] = {
-                "name": input("Name: "), "password": input("Pass: "),
+                "name": name, "password": Auth.hash_password(raw_pass), 
                 "balance": 0.0, "transactions": [],
                 "withdrawal_limit": 50000.0, "transfer_limit": 100000.0
             }
-        elif sub_choice == "2":
-            u_id = input("User ID to update: ")
-            if u_id in users:
-                users[u_id]["name"] = input(f"New Name ({users[u_id]['name']}): ")
-                users[u_id]["password"] = input("New Password: ")
-        elif sub_choice == "3":
-            u_id = input("User ID to delete: ")
-            users.pop(u_id, None)
-        elif sub_choice == "4":
-            print("\n--- All Users ---")
+            print(f"User {name} created successfully.")
+            
+        elif sub == "4": 
+            print("\n--- Registered Users ---")
             for uid, info in users.items():
-                print(f"ID: {uid} | Name: {info['name']} | Bal: {info['balance']}")
-        elif sub_choice == "5":
-            search = input("Search by ID or Name: ")
+                print(f"ID: {uid} | Name: {info['name']} | Balance: {info['balance']}")
+
+        elif sub == "5": 
+            search = input("Enter ID or Name to Search: ").strip()
+            found = False
             for uid, info in users.items():
-                if search in uid or search in info['name']:
-                    print(f"Match Found -> ID: {uid}, Name: {info['name']}")
-        elif sub_choice == "6":
-            u_id = input("User ID: ")
+                if search.lower() in uid.lower() or search.lower() in info['name'].lower():
+                    print(f"Match Found -> ID: {uid} | Name: {info['name']} | Bal: {info['balance']}")
+                    found = True
+            if not found: print("No matching user found.")
+
+        elif sub == "6":
+            u_id = input("User ID (or 0 to Cancel): ").strip()
             if u_id in users:
                 try:
                     users[u_id]["withdrawal_limit"] = float(input("New Withdrawal Limit: "))
                     users[u_id]["transfer_limit"] = float(input("New Transfer Limit: "))
-                    print("Limits updated (Source 30).")
-                except ValueError:
-                    print("Error: Numeric values only (Source 32).")
-
+                except ValueError: print("Numeric values only.")
+        
         self.db.save_data(users, self.db.users_file)
 
     def manage_admins_menu(self):
-        """Fulfills Source 18: Admin CRUD and viewing."""
         admins = self.db.load_data(self.db.admins_file)
-        print("\n1. Create Admin\n2. View All Admins\n3. Delete Admin")
-        sub_choice = input("Selection: ")
+        print("\n1. Create Admin\n2. View All Admins\n3. Delete Admin\n0. Back")
+        sub = input("Selection: ").strip()
+        if sub == "0": return
 
-        if sub_choice == "1":
-            a_id = input("New Admin ID: ")
-            admins[a_id] = {"name": input("Name: "), "password": input("Password: ")}
-        elif sub_choice == "2":
+        if sub == "1":
+            a_id = input("New Admin ID (or 0 to Cancel): ").strip()
+            if a_id in admins or a_id == "A01":
+                print("Error: Admin ID already exists.")
+                return
+            name = input("Name: ")
+            raw_pass = input("Password: ")
+            admins[a_id] = {"name": name, "password": Auth.hash_password(raw_pass)}
+            print(f"Admin {name} created successfully.")
+
+        elif sub == "2": 
             print("\n--- Registered Admins ---")
-            print("ID: A01 | Name: System Admin")  # Master Admin
-            for a_id, info in admins.items():
-                if a_id != "A01":
-                    print(f"ID: {a_id} | Name: {info['name']}")
-        elif sub_choice == "3":
-            a_id = input("Admin ID to delete: ")
-            if a_id != "A01":
-                admins.pop(a_id, None)
-
+            print("ID: A01 | Name: System Admin") 
+            for aid, info in admins.items():
+                print(f"ID: {aid} | Name: {info['name']}")
+            
+        elif sub == "3":
+            a_id = input("ID to delete (or 0 to Cancel): ").strip()
+            if a_id != "A01": admins.pop(a_id, None)
+            
         self.db.save_data(admins, self.db.admins_file)
 
-    def view_transactions_menu(self):
-        """Fulfills Source 17: View all transactions."""
+    def view_transactions_menu(self): 
         users = self.db.load_data(self.db.users_file)
-        print("\n1. View All\n2. View Specific User")
-        choice = input("Choice: ")
+        print("\n1. View All Transactions\n2. View Specific User Transactions\n0. Back")
+        choice = input("Selection: ").strip()
+        
         if choice == "1":
             for uid, data in users.items():
                 for tx in data.get('transactions', []):
-                    print(f"User: {uid} | {tx['date']} | {tx['type']} | {tx['amount']}")
+                    print(f"User: {uid} | {tx['date']} | {tx['type']} | {tx['amount']} | {tx.get('note', '')}")
         elif choice == "2":
-            uid = input("User ID: ")
+            uid = input("Enter User ID: ").strip()
             if uid in users:
                 for tx in users[uid].get('transactions', []):
-                    print(tx)
+                    print(f"{tx['date']} | {tx['type']} | {tx['amount']} | {tx.get('note', '')}")
+            else: print("User not found.")
 
-    def delete_transactions_logic(self):
-        """Fulfills Source 19: Delete transitions."""
-        uid = input("User ID to clear: ")
+    def delete_transactions_logic(self): 
+        uid = input("User ID to clear history (or 0 to Cancel): ").strip()
+        if uid == "0": return
         users = self.db.load_data(self.db.users_file)
         if uid in users:
             users[uid]['transactions'] = []
             self.db.save_data(users, self.db.users_file)
-            print("History cleared.")
+            print(f"Transaction history for ID {uid} has been cleared.")
 
-    def change_password_logic(self, current_admin):
-        """
-        Security Rule: Only 'System Admin' can change others' passwords (Source 20).
-        Others can only change their own.
-        """
-        print("\n1. Change My Password\n2. Change Others (System Admin Only)")
-        choice = input("Choice: ")
+    def change_password_logic(self, current_admin): 
+        print("\n1. Change My Password\n2. Change Others (System Admin Only)\n0. Back")
+        choice = input("Choice: ").strip()
+        if choice == "0": return
 
         if choice == "1":
-            new_p = input("New Password: ")
+            new_p = input("New Password: ").strip()
             admins = self.db.load_data(self.db.admins_file)
-            # Update current session and storage
             if current_admin.account_id in admins:
-                admins[current_admin.account_id]["password"] = new_p
+                admins[current_admin.account_id]["password"] = Auth.hash_password(new_p)
                 self.db.save_data(admins, self.db.admins_file)
-            print("Password updated.")
+                print("Your password has been updated.")
+            elif current_admin.account_id == "A01":
+                print("Note: Master Admin password is controlled via .env file.")
 
-        elif choice == "2":
-            # Strict name check for the Master Admin
-            if current_admin.name == "System Admin":
-                target_type = input("Target (1. User / 2. Admin): ")
-                t_id = input("Enter ID: ")
-                new_p = input("Enter New Password: ")
+        elif choice == "2" and current_admin.name == "System Admin":
+            target = input("Target (1. User / 2. Admin / 0. Back): ").strip()
+            if target == "0": return
+            t_id = input("Enter ID: ").strip()
+            new_p = input("Enter New Password: ").strip()
+            hashed_p = Auth.hash_password(new_p)
 
-                if target_type == "1":
-                    data = self.db.load_data(self.db.users_file)
-                    if t_id in data:
-                        data[t_id]["password"] = new_p
-                        self.db.save_data(data, self.db.users_file)
-                        print("User password updated.")
-                else:
-                    data = self.db.load_data(self.db.admins_file)
-                    if t_id in data:
-                        data[t_id]["password"] = new_p
-                        self.db.save_data(data, self.db.admins_file)
-                        print("Admin password updated.")
-            else:
-                print("Permission Denied: Only System Admin can change other passwords.")
+            if target == "1":
+                data = self.db.load_data(self.db.users_file)
+                if t_id in data: 
+                    data[t_id]["password"] = hashed_p
+                    self.db.save_data(data, self.db.users_file)
+                    print("User password updated.")
+            elif target == "2":
+                data = self.db.load_data(self.db.admins_file)
+                if t_id in data: 
+                    data[t_id]["password"] = hashed_p
+                    self.db.save_data(data, self.db.admins_file)
+                    print("Admin password updated.")
