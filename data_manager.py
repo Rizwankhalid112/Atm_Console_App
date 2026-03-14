@@ -10,7 +10,6 @@ class DataManager:
         self.users_file = os.path.join(self.folder, "users.json")
         self.admins_file = os.path.join(self.folder, "admins.json")
 
-        # Ensure the data directory exists
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
 
